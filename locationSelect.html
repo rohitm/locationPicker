@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=true"></script>
+		
+		<script type="text/javascript">
+			geocoder = new google.maps.Geocoder();
+			var address=[];
+			
+			function updateCity() {
+				address=[];
+				if($('#city').val().length < 4) {
+					$('#finding-indicator').hide();
+					$('#address').html('');
+				} else {
+					getCity() ;
+				}			
+			}
+			
+			function getCity(){
+				return (geocoder.geocode( { 'address': $('#city').val()}, function(results, status) {
+					$('#finding-indicator').hide();				
+					if (status == google.maps.GeocoderStatus.OK) {
+						var address_components = results[0].address_components ;
+						var cityFound=false ;
+						var regionFound=false ;
+						var countryFound = false ;
+						for (component in address_components) {
+							if(address_components[component].types[0] == 'locality') {
+								address.city = address_components[component].long_name;
+								cityFound=true ;
+							}
+							if(address_components[component].types[0] == 'administrative_area_level_1') {
+								address.region = address_components[component].long_name;
+								regionFound=true ;
+							}
+							if(address_components[component].types[0] == 'country') {
+								address.country = address_components[component].long_name;
+								countryFound = true ;
+							}
+						}
+	
+						if (cityFound) {
+							// Construct friendly address
+							
+							if (address.region == undefined) {
+								address.region = address.country ;
+							}
+							
+							if (address.city == address.country) {
+								address.formatted = address.city ;
+							} else {
+								address.formatted = address.city+', '+address.region+', '+address.country ;						
+							}
+							$('#google-address').val(address.formatted);
+							$('#locationJson').html(JSON.stringify(address_components));
+						} 
+						if (address.formatted == undefined) {
+							if (address.region == undefined) {
+								$('#address').html('Where in '+address.country);
+							} else {
+								$('#address').html('Where in '+address.region);
+							}
+						} else {
+							$('#address').html(address.formatted);
+						}
+						
+					} else {
+						$('#address').html('Not found !');
+					}
+				}));
+			}
+			
+			$(document).ready(function(){
+				var myTimer = undefined;
+				var delayTime = 2000; // should be in miliseconds.
+				$('#city').keyup(function() {
+					if($('#city').val().length >= 4) {
+						$('#finding-indicator').show();
+					}	
+					if (myTimer) {
+						clearTimeout(myTimer);
+					}
+					myTimer = setTimeout(function(){
+						updateCity();				
+					}, delayTime);
+				});
+				
+				$('#city').change(function() {
+					$('#finding-indicator').show();
+					updateCity();
+				});				
+			});												
+		</script>
+	</head>
+	
+	<body>
+		<span style="font-size:16px">
+			Which city do you live ? <input type="text" id="city" name="city" value="" />
+			<span id="address">
+			</span>
+			<span id = "finding-indicator" style="font-size:10px;display:none;">Finding...</span>		
+			<br/>
+		</span>
+		<div id="locationJson" style="font-size:10px;">
+			
+		</div>
+	</body>
+</html	
